@@ -4,10 +4,14 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import DemoBanner from "@/components/DemoBanner";
+import SiteFooter from "@/components/layout/SiteFooter";
+import SiteHeader from "@/components/layout/SiteHeader";
+import { useSession } from "@/hooks/useSession";
+import { signIn, takeReturnPath } from "@/lib/session";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { session, signedIn, signOut } = useSession();
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -89,25 +93,10 @@ export default function LoginPage() {
 
         // Demo session only.
         // Supabase Auth will replace this later.
-        if (keepSignedIn) {
-            localStorage.setItem("demoLoggedIn", "true");
-            localStorage.setItem(
-                "demoUsername",
-                username.trim().toLowerCase()
-            );
-
-            sessionStorage.removeItem("demoLoggedIn");
-            sessionStorage.removeItem("demoUsername");
-        } else {
-            sessionStorage.setItem("demoLoggedIn", "true");
-            sessionStorage.setItem(
-                "demoUsername",
-                username.trim().toLowerCase()
-            );
-
-            localStorage.removeItem("demoLoggedIn");
-            localStorage.removeItem("demoUsername");
-        }
+        signIn({
+            username: username.trim().toLowerCase(),
+            keepSignedIn,
+        });
 
         openPopup(
             "Sign in successful",
@@ -115,35 +104,13 @@ export default function LoginPage() {
         );
 
         setTimeout(() => {
-            router.push("/");
+            router.push(takeReturnPath() || "/profile");
         }, 900);
     };
 
     return (
         <main className="min-h-screen bg-[#f3f1ed] text-[#171717]">
-            <DemoBanner />
-
-            {/* Header */}
-            <header className="border-b border-gray-200 bg-white">
-                <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-                    <Link href="/" className="group">
-                        <p className="text-2xl font-bold tracking-tight">
-                            Adelaide University
-                        </p>
-
-                        <p className="mt-1 text-sm text-gray-500">
-                            Volunteer & Event Coordination
-                        </p>
-                    </Link>
-
-                    <Link
-                        href="/"
-                        className="font-semibold text-[#7C00E8] hover:underline"
-                    >
-                        Back to website
-                    </Link>
-                </div>
-            </header>
+            <SiteHeader />
 
             {/* Login area */}
             <section className="mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
@@ -203,6 +170,36 @@ export default function LoginPage() {
 
                 {/* Login card */}
                 <div className="mx-auto w-full max-w-xl bg-white p-8 shadow-sm md:p-10">
+                    {signedIn && session ? (
+                        <div>
+                            <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#7C00E8]">
+                                Already signed in
+                            </p>
+                            <h2 className="mt-3 text-4xl font-semibold">Welcome back</h2>
+                            <p className="mt-4 leading-7 text-gray-600">
+                                You are signed in as{" "}
+                                <strong>{session.username}</strong>. Your session stays
+                                active while you move between Discover, applications,
+                                shifts and profile.
+                            </p>
+                            <Link
+                                href="/profile"
+                                className="mt-8 block bg-black px-6 py-4 text-center text-lg font-semibold text-white transition hover:bg-[#7C00E8]"
+                            >
+                                Continue to your portal
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    signOut();
+                                }}
+                                className="mt-4 w-full border border-black px-6 py-3 font-semibold transition hover:bg-[#f3f1ed]"
+                            >
+                                Sign out
+                            </button>
+                        </div>
+                    ) : (
+                        <>
                     <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#7C00E8]">
                         Secure access
                     </p>
@@ -359,11 +356,13 @@ export default function LoginPage() {
 
                         <p className="mt-1 text-sm leading-6 text-gray-700">
                             This educational prototype does not connect to
-                            Adelaide University&apos;s production Single Sign-On.
-                            Real authentication and session handling will use
-                            Supabase Auth.
-                        </p>
+                        Adelaide University&apos;s production Single Sign-On.
+                        Real authentication and session handling will use
+                        Supabase Auth.
+                    </p>
                     </div>
+                        </>
+                    )}
                 </div>
             </section>
 
@@ -404,24 +403,7 @@ export default function LoginPage() {
                 </div>
             )}
 
-            {/* Footer */}
-            <footer className="bg-black text-white">
-                <div className="mx-auto flex max-w-7xl flex-col justify-between gap-4 px-6 py-8 md:flex-row">
-                    <div>
-                        <p className="font-semibold">
-                            Volunteer & Event Coordination
-                        </p>
-
-                        <p className="mt-1 text-sm text-gray-400">
-                            Adelaide University project demo
-                        </p>
-                    </div>
-
-                    <p className="text-sm text-gray-400">
-                        Educational prototype only
-                    </p>
-                </div>
-            </footer>
+            <SiteFooter />
         </main>
     );
 }

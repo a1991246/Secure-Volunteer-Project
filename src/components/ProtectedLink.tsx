@@ -3,43 +3,34 @@
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
+import { getSession, rememberReturnPath } from "@/lib/session";
+
 type ProtectedLinkProps = {
-    href: string;
-    children: ReactNode;
-    className?: string;
+  href: string;
+  children: ReactNode;
+  className?: string;
 };
 
 export default function ProtectedLink({
-    href,
-    children,
-    className = "",
+  href,
+  children,
+  className = "",
 }: ProtectedLinkProps) {
-    const router = useRouter();
+  const router = useRouter();
 
-    const handleClick = () => {
-        // Check both session and remembered login.
-        const isLoggedIn =
-            sessionStorage.getItem("demoLoggedIn") === "true" ||
-            localStorage.getItem("demoLoggedIn") === "true";
+  const handleClick = () => {
+    if (getSession()) {
+      router.push(href);
+      return;
+    }
 
-        if (isLoggedIn) {
-            router.push(href);
-            return;
-        }
+    rememberReturnPath(href);
+    router.push("/login");
+  };
 
-        // Remember where the student wanted to go.
-        sessionStorage.setItem("returnAfterLogin", href);
-
-        router.push("/login");
-    };
-
-    return (
-        <button
-            type="button"
-            onClick={handleClick}
-            className={className}
-        >
-            {children}
-        </button>
-    );
+  return (
+    <button type="button" onClick={handleClick} className={className}>
+      {children}
+    </button>
+  );
 }
